@@ -16,7 +16,7 @@ resource "aws_subnet" "private_subnet" {
   }
 }
 resource "aws_instance" "ec2_example" {
-  ami           = "ami-00101c3551c99b710"
+  ami           = "ami-01f5a0b78d6089704"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.private_subnet.id
 
