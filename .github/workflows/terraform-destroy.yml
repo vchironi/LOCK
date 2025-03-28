@@ -2,6 +2,9 @@ name: Terraform Destroy
 
 on:
   workflow_dispatch:  # allows manual trigger from GitHub UI
+  permissions:
+    id-token: write
+    contents: read
 
 jobs:
   destroy:
@@ -11,10 +14,10 @@ jobs:
     environment: LOCK_env  # requires approval before proceeding (optional)
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.0
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v3.0.0
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
