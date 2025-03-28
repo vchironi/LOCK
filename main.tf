@@ -17,7 +17,7 @@ resource "aws_subnet" "private_subnet" {
 }
 resource "aws_instance" "ec2_example" {
   ami           = "ami-0013f152ff066ceb8"
-  instance_type = "t2.micro"
+  instance_type = "t2.nano"
   subnet_id     = aws_subnet.private_subnet.id
 
   tags = {
