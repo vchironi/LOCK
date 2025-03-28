@@ -1,4 +1,4 @@
-name: Deploy Terraform Backend (S3 Only)
+name: Deploy Terraform Backend (S3 Only )
 
 on:
   push:
