@@ -29,6 +29,8 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
         working-directory: ${{ env.TF_WORKING_DIR }}
+      - name: Log Validation Success
+        run: echo "✅ Terraform validation completed successfully at $(date)"
 
   plan:
     name: Terraform Plan
@@ -53,6 +55,8 @@ jobs:
         with:
           name: tfplan
           path: ${{ env.TF_WORKING_DIR }}/tfplan
+      - name: Log Plan Success
+        run: echo "✅ Terraform plan completed successfully at $(date)"
 
   wait-for-approval:
     name: Wait for Manual Approval
@@ -61,7 +65,13 @@ jobs:
     environment: LOCK_env
     steps:
       - name: Await approval
-        run: echo "Waiting for manual approval..."
+        run: echo "⏳ Waiting for manual approval..."
+      - name: Send Slack Notification
+        if: always()
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          slack-message: "🚨 Terraform plan is ready for review. Please approve to proceed."
+          slack-webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   apply:
     name: Terraform Apply 🚀
@@ -87,3 +97,5 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
         working-directory: ${{ env.TF_WORKING_DIR }}
+      - name: Log Apply Success
+        run: echo "✅ Terraform apply completed successfully at $(date)"
