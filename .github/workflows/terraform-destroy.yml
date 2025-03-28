@@ -3,6 +3,7 @@ name: Terraform Destroy
 permissions:
   id-token: write
   contents: read
+  pull-requests: write
 
 on:
   push:
@@ -33,6 +34,17 @@ jobs:
 
       - name: Init Terraform
         run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color > tfplan.txt
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Comment on PR with Terraform Plan
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: tfplan.txt
 
       - name: Terraform Destroy
         run: terraform destroy -auto-approve
