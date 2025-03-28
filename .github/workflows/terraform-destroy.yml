@@ -4,87 +4,126 @@ on:
   push:
     branches:
       - main
+  # Optional: Allow manual triggering
+  workflow_dispatch:
 
+# Global environment variables
 env:
   TF_VERSION: 1.6.0
   TF_WORKING_DIR: .
+  AWS_REGION: us-east-1 # Standardize on AWS_REGION
+
+# Define necessary permissions
+permissions:
+  contents: read # Required for actions/checkout
 
 jobs:
   validate:
     name: Terraform Validate
     runs-on: ubuntu-latest
     env:
+      # AWS Credentials scoped to this job
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: us-east-1
+      # AWS_DEFAULT_REGION is deprecated in favor of AWS_REGION by AWS SDKs/CLI v2
+      # but Terraform provider might still look for it. Set both for compatibility.
+      AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
+
       - name: Terraform Init
+        id: init_validate
         run: terraform init -reconfigure
         working-directory: ${{ env.TF_WORKING_DIR }}
+
       - name: Terraform Validate
+        id: validate
         run: terraform validate
         working-directory: ${{ env.TF_WORKING_DIR }}
 
   plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
-    needs: validate
+    needs: validate # Ensure validation passes first
     env:
+      # AWS Credentials scoped to this job
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: us-east-1
+      AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
+
       - name: Terraform Init
+        id: init_plan
         run: terraform init -reconfigure
         working-directory: ${{ env.TF_WORKING_DIR }}
+
       - name: Terraform Plan
+        id: plan
         run: terraform plan -out=tfplan
         working-directory: ${{ env.TF_WORKING_DIR }}
-      - name: Upload tfplan
+
+      - name: Upload Terraform Plan Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan
+          name: tfplan-${{ github.sha }} # Unique name using commit SHA
           path: ${{ env.TF_WORKING_DIR }}/tfplan
+          retention-days: 1 # Keep artifact only for a short time
 
-  wait-for-approval:
-    name: Wait for Manual Approval
+  request-approval:
+    name: Request Manual Approval
     runs-on: ubuntu-latest
     needs: plan
-    environment: LOCK_env
+    environment: LOCK_env # Target the environment requiring approval
     steps:
-      - name: Await approval
-        run: echo "Waiting for manual approval..."
+      # This step is mainly informational; the environment enforces the pause.
+      - name: Wait for approval
+        run: echo "Workflow paused. Waiting for manual approval on environment 'LOCK_env'..."
 
   apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
-    needs: wait-for-approval
-    environment: LOCK_env
+    needs: request-approval # Runs only after the 'request-approval' job (and its environment) is approved
+    environment: LOCK_env # Must also run within the protected environment context
     env:
+      # AWS Credentials scoped to this job
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: us-east-1
+      AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
+
+      # Init is still required here as each job runs in a fresh container
       - name: Terraform Init
+        id: init_apply
         run: terraform init -reconfigure
         working-directory: ${{ env.TF_WORKING_DIR }}
-      - name: Download tfplan
+
+      - name: Download Terraform Plan Artifact
         uses: actions/download-artifact@v4
         with:
-          name: tfplan
+          name: tfplan-${{ github.sha }} # Match the upload name
           path: ${{ env.TF_WORKING_DIR }}
+
       - name: Terraform Apply
+        id: apply
         run: terraform apply -auto-approve tfplan
         working-directory: ${{ env.TF_WORKING_DIR }}
