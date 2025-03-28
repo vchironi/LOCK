@@ -1,11 +1,11 @@
 name: Terraform Destroy
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   workflow_dispatch:  # allows manual trigger from GitHub UI
-  permissions:
-    id-token: write
-    contents: read
-
 jobs:
   destroy:
     name: Terraform Destroy
