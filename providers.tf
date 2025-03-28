@@ -7,6 +7,7 @@ terraform {
         key            = "vchironi/terraform/state/terraform.tfstate"
         region         = "us-east-1"
         dynamodb_table = "terraform-lock-table"
+        description   = "Terraform state file for VPC and EC2 instance"
       
     }
 }
