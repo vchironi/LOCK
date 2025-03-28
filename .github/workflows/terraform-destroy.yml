@@ -35,9 +35,9 @@ jobs:
       - name: Init Terraform
         run: terraform init
 
-      - name: Terraform Plan
+      - name: Terraform Destroy Plan
         id: plan
-        run: terraform plan -no-color > tfplan.txt
+        run: terraform plan -destroy -no-color > tfplan.txt
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Comment on PR with Terraform Plan
