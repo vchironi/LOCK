@@ -21,6 +21,6 @@ resource "aws_instance" "ec2_example" {
   subnet_id     = aws_subnet.private_subnet.id
 
   tags = {
-    Name = "MyEC2Instance_2_"
+    Name = "MyEC2Instance_3_"
   }
 }
