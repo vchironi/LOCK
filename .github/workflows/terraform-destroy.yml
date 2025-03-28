@@ -5,7 +5,13 @@ permissions:
   contents: read
 
 on:
-  workflow_dispatch:  # allows manual trigger from GitHub UI
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
   destroy:
     name: Terraform Destroy
