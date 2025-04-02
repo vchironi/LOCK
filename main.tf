@@ -12,7 +12,7 @@ resource "aws_subnet" "private_subnet" {
   availability_zone = "us-east-1a"
 
   tags = {
-    Name = "my-private-subnet"
+    Name = "my-private-subnet-1"
   }
 }
 resource "aws_instance" "ec2_example" {
